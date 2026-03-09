@@ -383,13 +383,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--ink);font-fami
 
 // --- THE ULTIMATE IMAGE PROXY ENGINE ---
 // This bypasses Wikipedia's hotlink protection perfectly by using the open-source Weserv image proxy cache.
-function getProxyUrl(url) {
-  if (url.includes('wikimedia.org')) {
-    return 'https://wsrv.nl/?url=' + url + '&w=700&output=webp&q=85';
-  }
-  return url;
-}
-
+function getProxyUrl(url) { return url; }
 var ICO={
   palace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V9l6-6 6 6v12M9 21v-5h6v5"/><path d="M9 9h6"/></svg>',
   temple:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 8h20L12 2z"/><rect x="4" y="8" width="16" height="13"/><path d="M9 21v-6h6v6"/></svg>',
@@ -579,7 +573,7 @@ function buildUI(){
     c.innerHTML=
       '<div class="card-img-wrap">'+
         '<div class="shimmer"></div>'+
-        '<img class="card-img" src="'+getProxyUrl(s.img1)+'" '+
+        '<img referrerpolicy=\"no-referrer\" class=\"card-img\" src=\"'+getProxyUrl(s.img1)+'\" '+
           'onload="this.classList.add(\'loaded\');this.previousElementSibling.style.display=\'none\'" '+
           'onerror="window.handleImageError(this,\''+safeCat+'\')">'+
         '<div class="card-stripe" style="background:'+col+';"></div>'+
@@ -705,7 +699,7 @@ function openSite(site){
 
   document.getElementById('panel-content').innerHTML=
     '<div class="phero">'+
-      '<img class="phero-img" src="'+getProxyUrl(site.img1)+'" onload="this.classList.add(\'loaded\')" onerror="window.handleImageError(this,\''+safeCat+'\')">'+
+      '<img referrerpolicy=\"no-referrer\" class=\"phero-img\" src=="'+getProxyUrl(site.img1)+'" onload="this.classList.add(\'loaded\')" onerror="window.handleImageError(this,\''+safeCat+'\')">'+
       '<div class="ph-grad"></div>'+
       '<div class="ph-meta"><div class="ph-ico" style="color:'+col+'">'+(ICO[site.ico]||'')+'<span class="ph-cat">'+site.cat+'</span></div></div>'+
       '<div class="ph-num">SITE '+paddedId+'</div>'+
