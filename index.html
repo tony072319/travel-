@@ -573,7 +573,7 @@ function buildUI(){
     c.innerHTML=
       '<div class="card-img-wrap">'+
         '<div class="shimmer"></div>'+
-        '<img referrerpolicy=\"no-referrer\" class=\"card-img\" src=\"'+getProxyUrl(s.img1)+'\" '+
+        '<img referrerpolicy="no-referrer" class="phero-img" src="'+getProxyUrl(site.img1)+'"
           'onload="this.classList.add(\'loaded\');this.previousElementSibling.style.display=\'none\'" '+
           'onerror="window.handleImageError(this,\''+safeCat+'\')">'+
         '<div class="card-stripe" style="background:'+col+';"></div>'+
@@ -817,7 +817,7 @@ function renderItinerary(){
     var s=SITES.find(function(x){return x.id===sid;});
     if(!s) return;
     html+='<div class="itin-item" onclick="openSite(SITES.find(function(x){return x.id==='+sid+';}));toggleItinPanel();">';
-    html+='<div style="width:50px;height:50px;background:#110c08;border-radius:4px;overflow:hidden;flex-shrink:0;"><img src="'+getProxyUrl(s.img1)+'" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.75)" onerror="this.style.display=\'none\'"></div>';
+    html+='<div style="width:50px;height:50px;background:#110c08;border-radius:4px;overflow:hidden;flex-shrink:0;"><img referrerpolicy="no-referrer" src="'+getProxyUrl(s.img1)+'"" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.75)" onerror="this.style.display=\'none\'"></div>';
     html+='<div class="itin-item-info"><div class="itin-item-zh">'+s.zh+'</div><div class="itin-item-cat">'+s.cat+'</div></div>';
     html+='<button class="itin-item-remove" onclick="event.stopPropagation();removeFromItinerary('+sid+');">✕</button>';
     html+='</div>';
