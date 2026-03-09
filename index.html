@@ -384,6 +384,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--ink);font-fami
 // --- THE ULTIMATE IMAGE PROXY ENGINE ---
 // This bypasses Wikipedia's hotlink protection perfectly by using the open-source Weserv image proxy cache.
 function getProxyUrl(url) { return url; }
+
 var ICO={
   palace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V9l6-6 6 6v12M9 21v-5h6v5"/><path d="M9 9h6"/></svg>',
   temple:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 8h20L12 2z"/><rect x="4" y="8" width="16" height="13"/><path d="M9 21v-6h6v6"/></svg>',
@@ -573,7 +574,7 @@ function buildUI(){
     c.innerHTML=
       '<div class="card-img-wrap">'+
         '<div class="shimmer"></div>'+
-        '<img referrerpolicy="no-referrer" class="phero-img" src="'+getProxyUrl(site.img1)+'"
+        '<img referrerpolicy="no-referrer" class="card-img" src="'+getProxyUrl(s.img1)+'" '+
           'onload="this.classList.add(\'loaded\');this.previousElementSibling.style.display=\'none\'" '+
           'onerror="window.handleImageError(this,\''+safeCat+'\')">'+
         '<div class="card-stripe" style="background:'+col+';"></div>'+
@@ -699,7 +700,7 @@ function openSite(site){
 
   document.getElementById('panel-content').innerHTML=
     '<div class="phero">'+
-      '<img referrerpolicy=\"no-referrer\" class=\"phero-img\" src=="'+getProxyUrl(site.img1)+'" onload="this.classList.add(\'loaded\')" onerror="window.handleImageError(this,\''+safeCat+'\')">'+
+      '<img referrerpolicy="no-referrer" class="phero-img" src="'+getProxyUrl(site.img1)+'" onload="this.classList.add(\'loaded\')" onerror="window.handleImageError(this,\''+safeCat+'\')">'+
       '<div class="ph-grad"></div>'+
       '<div class="ph-meta"><div class="ph-ico" style="color:'+col+'">'+(ICO[site.ico]||'')+'<span class="ph-cat">'+site.cat+'</span></div></div>'+
       '<div class="ph-num">SITE '+paddedId+'</div>'+
@@ -817,7 +818,7 @@ function renderItinerary(){
     var s=SITES.find(function(x){return x.id===sid;});
     if(!s) return;
     html+='<div class="itin-item" onclick="openSite(SITES.find(function(x){return x.id==='+sid+';}));toggleItinPanel();">';
-    html+='<div style="width:50px;height:50px;background:#110c08;border-radius:4px;overflow:hidden;flex-shrink:0;"><img referrerpolicy="no-referrer" src="'+getProxyUrl(s.img1)+'"" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.75)" onerror="this.style.display=\'none\'"></div>';
+    html+='<div style="width:50px;height:50px;background:#110c08;border-radius:4px;overflow:hidden;flex-shrink:0;"><img referrerpolicy="no-referrer" src="'+getProxyUrl(s.img1)+'" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.75)" onerror="this.style.display=\'none\'"></div>';
     html+='<div class="itin-item-info"><div class="itin-item-zh">'+s.zh+'</div><div class="itin-item-cat">'+s.cat+'</div></div>';
     html+='<button class="itin-item-remove" onclick="event.stopPropagation();removeFromItinerary('+sid+');">✕</button>';
     html+='</div>';
@@ -836,7 +837,7 @@ function toggleItinPanel(){
   }
 }
 
-// ── LIGHTBOX ────────────────────────────────────────────────────────────
+// LIGHTBOX
 var _lbImgs=[], _lbIdx=0;
 function lbOpen(imgs,idx,cap){
   if(!Array.isArray(imgs)) imgs=[imgs];
@@ -847,18 +848,18 @@ function lbOpen(imgs,idx,cap){
   dots.innerHTML=imgs.filter(Boolean).map(function(_,i){
     return '<button onclick="lbSwitch('+i+')" style="width:8px;height:8px;border-radius:50%;background:'+(i===_lbIdx?'var(--warm)':'rgba(255,255,255,.25)')+';border:none;cursor:pointer"></button>';
   }).join('');
-  var lb=document.getElementById('lightbox');
-  lb.style.display='flex';
+  document.getElementById('lightbox').style.display='flex';
 }
 function lbSwitch(i){
-  _lbIdx=i; document.getElementById('lb-img').src=_lbImgs[i]||'';
+  _lbIdx=i;
+  document.getElementById('lb-img').src=_lbImgs[i]||'';
   document.getElementById('lb-dots').querySelectorAll('button').forEach(function(b,j){
     b.style.background=j===i?'var(--warm)':'rgba(255,255,255,.25)';
   });
 }
 function lbClose(){ document.getElementById('lightbox').style.display='none'; }
 
-// ── SURPRISE ME ──────────────────────────────────────────────────────────
+// SURPRISE ME
 var _visited=[];
 function surpriseMe(){
   var pool=SITES.filter(function(s){var c=document.getElementById('c'+s.id);return c&&c.style.display!=='none';});
@@ -870,7 +871,7 @@ function surpriseMe(){
   openSite(pick);
 }
 
-// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────
+// KEYBOARD SHORTCUTS
 document.addEventListener('keydown',function(e){
   if(document.activeElement&&document.activeElement.tagName==='INPUT') return;
   if(e.key==='Escape'){
@@ -887,6 +888,7 @@ document.addEventListener('keydown',function(e){
   if(e.key==='ArrowRight'&&activeId!==null){e.preventDefault();nextSite();}
   if(e.key==='ArrowLeft'&&activeId!==null){e.preventDefault();prevSite();}
 });
+
 </script>
 </body>
 </html>
