@@ -385,7 +385,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--ink);font-fami
 // This bypasses Wikipedia's hotlink protection perfectly by using the open-source Weserv image proxy cache.
 function getProxyUrl(url) {
   if (url.includes('wikimedia.org')) {
-    var bare = url.replace(/^https?:\/\//, ''); return 'https://wsrv.nl/?url=' + bare + '&w=700&output=webp&q=85';
+    return 'https://wsrv.nl/?url=' + url + '&w=700&output=webp&q=85';
   }
   return url;
 }
