@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="referrer" content="no-referrer"/>
+<title>深游 · Shenyou Deep Travel</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --ink: #0a0806;
+  --paper: #f0eadd;
+  --warm: #dca332;
+  --red: #c93b2e;
+  --muted: #8a7a65;
+  --ui-bg: rgba(10, 8, 6, 0.88);
+  --ui-border: rgba(220, 163, 50, 0.25);
+  --green: #2e7d5e;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--ink);font-family:'Lora',serif;display:flex;flex-direction:column;color:var(--paper);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:rgba(255,255,255,0.04);}
+::-webkit-scrollbar-thumb{background:rgba(220,163,50,0.35);border-radius:2px;}
+
+/* ─── TOPBAR ──────────────────────────────────── */
+#topbar{
+  height:60px;flex-shrink:0;display:flex;align-items:center;
+  justify-content:space-between;padding:0 25px;
+  background:rgba(10,8,6,0.97);
+  border-bottom:1px solid var(--ui-border);
+  z-index:1000;box-shadow:0 4px 30px rgba(0,0,0,0.8);
+  backdrop-filter:blur(15px);
+}
+.logo-wrap{display:flex;align-items:baseline;gap:12px;cursor:pointer;}
+.logo-zh{font-family:'Noto Serif SC',serif;font-weight:700;font-size:24px;color:var(--warm);letter-spacing:3px;}
+.logo-en{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.25em;text-transform:uppercase;}
+.nav-right{display:flex;gap:10px;align-items:center;}
+.badge{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--paper);background:rgba(220,163,50,0.12);border:1px solid var(--warm);padding:5px 14px;letter-spacing:.15em;border-radius:4px;}
+.nav-btn{
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  color:var(--muted);background:rgba(255,255,255,0.04);
+  border:1px solid var(--ui-border);padding:5px 14px;
+  letter-spacing:.15em;border-radius:4px;cursor:pointer;
+  transition:all .2s;text-transform:uppercase;
+}
+.nav-btn:hover{border-color:var(--warm);color:var(--warm);}
+.nav-btn.active{background:rgba(220,163,50,0.15);border-color:var(--warm);color:var(--paper);}
+.live-time { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; display: flex; align-items: center; gap: 6px; margin-right: 10px; }
+.pulse-dot { width: 6px; height: 6px; background-color: var(--red); border-radius: 50%; animation: pulse 2s infinite; }
+
+/* ─── HERO BANNER ─────────────────────────────── */
+#hero{
+  position:fixed;inset:0;z-index:5000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--ink);overflow:hidden;
+  cursor:pointer; transition: opacity 0.8s ease, transform 0.8s ease;
+}
+#hero.gone{opacity:0; pointer-events:none; transform: scale(1.05);}
+
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,59,46,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 20% 70%, rgba(220,163,50,0.05) 0%, transparent 60%);
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(220,163,50,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(220,163,50,0.04) 1px, transparent 1px);
+  background-size:48px 48px;
+}
+.hero-images{position:absolute;inset:0;display:flex;gap:2px;opacity:0.25;}
+.hero-img-strip{flex:1;overflow:hidden;}
+.hero-img-strip img{width:100%;height:100%;object-fit:cover;filter:brightness(0.6) contrast(1.1);}
+
+.hero-content{position:relative;text-align:center;z-index:10;}
+.hero-eyebrow{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.35em;text-transform:uppercase;margin-bottom:20px;opacity:0;animation:fadeUp .8s ease .3s forwards;}
+.hero-title{font-family:'Noto Serif SC',serif;font-weight:700;font-size:clamp(64px,10vw,120px);color:var(--paper);line-height:1;letter-spacing:8px;margin-bottom:10px;opacity:0;animation:fadeUp .8s ease .5s forwards;text-shadow:0 0 80px rgba(220,163,50,0.4);}
+.hero-title span{color:var(--warm);}
+.hero-subtitle{font-family:'Lora',serif;font-style:italic;font-size:18px;color:var(--muted);margin-bottom:40px;opacity:0;animation:fadeUp .8s ease .7s forwards;}
+.hero-cta{display:inline-flex;align-items:center;gap:12px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--ink);background:var(--warm);padding:16px 40px;letter-spacing:.15em;text-transform:uppercase;border:none;cursor:pointer;border-radius:4px;opacity:0;animation:fadeUp .8s ease .9s forwards;transition:all .25s;}
+.hero-cta:hover{background:var(--paper);transform:translateY(-2px);box-shadow:0 12px 40px rgba(220,163,50,0.4);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:0.6;}50%{opacity:1;box-shadow:0 0 10px var(--red);}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.shimmer{position:absolute;inset:0;background:linear-gradient(90deg,#110c08 0%,#1e1610 50%,#110c08 100%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
+
+/* ─── MAIN & MAP ──────────────────────────────── */
+#main{flex:1;display:flex;min-height:0;overflow:hidden;position:relative;}
+#mapwrap{flex:1;position:relative;min-height:0;}
+#map{position:absolute;inset:0;background:var(--ink);z-index:10;}
+
+.leaflet-tooltip{background:rgba(10,8,6,0.95)!important;border:1px solid var(--warm)!important;color:var(--paper)!important;font-family:'Noto Serif SC',serif!important;font-size:13px!important;padding:6px 14px!important;border-radius:4px!important;box-shadow:0 6px 20px rgba(0,0,0,0.8)!important;backdrop-filter:blur(6px);}
+.leaflet-tooltip::before{display:none!important;}
+.leaflet-control-zoom, .custom-map-control { border:1px solid var(--ui-border)!important;box-shadow:0 4px 15px rgba(0,0,0,0.5)!important;border-radius:4px!important;overflow:hidden;background-color:rgba(10,8,6,0.8)!important;backdrop-filter:blur(8px); }
+.leaflet-bar a, .custom-map-control { color:var(--warm)!important;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s; }
+.leaflet-bar a:hover, .custom-map-control:hover { background-color:var(--warm)!important;color:var(--ink)!important; }
+.custom-map-control { position:absolute;right:10px;width:34px;height:34px;z-index:400;font-family:'Space Mono',monospace;font-size:14px;font-weight:bold; }
+
+.marker-cluster-custom{background:rgba(220,163,50,0.9);border:2px solid var(--paper);color:var(--ink);font-family:'Space Mono',monospace;font-size:15px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 25px rgba(220,163,50,0.7),inset 0 0 10px rgba(255,255,255,0.6);backdrop-filter:blur(4px);transition:transform 0.2s;}
+.marker-cluster-custom:hover{transform:scale(1.15);}
+
+.itin-map-label { background: var(--green); border: none; color: white; font-family: 'Space Mono', monospace; font-weight: bold; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.itin-map-label::before { display: none; }
+
+/* ─── FILTER & TIMELINE ───────────────────────── */
+#filterbar{position:absolute;top:20px;left:20px;right:20px;z-index:600;display:flex;gap:10px;overflow-x:auto;align-items:center;padding-bottom:5px;scrollbar-width:none;}
+.search-wrap{position:relative;flex-shrink:0;}
+.search-box{font-family:'Space Mono',monospace;font-size:12px;padding:12px 18px 12px 42px;border:1px solid var(--ui-border);background:var(--ui-bg);color:var(--paper);outline:none;border-radius:6px;backdrop-filter:blur(15px);width:220px;transition:all .3s;box-shadow:0 6px 20px rgba(0,0,0,0.5);}
+.search-box:focus{border-color:var(--warm);width:260px;background:rgba(10,8,6,0.95);}
+.search-box::placeholder{color:rgba(255,255,255,0.3);}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.search-icon svg{width:14px;height:14px;}
+
+.filt{flex-shrink:0;font-family:'Space Mono',monospace;font-size:11px;padding:10px 16px;border:1px solid var(--ui-border);background:var(--ui-bg);color:var(--muted);cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:all .2s ease;white-space:nowrap;backdrop-filter:blur(15px);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.5);font-weight:700;}
+.filt:hover{border-color:var(--warm);color:var(--warm);transform:translateY(-2px);}
+.filt.on{border-color:var(--warm);background:rgba(220,163,50,0.2);color:var(--paper);box-shadow:inset 0 0 15px rgba(220,163,50,0.2);}
+
+/* Timeline Filter */
+#timeline { position: absolute; bottom: 230px; left: 50%; transform: translateX(-50%); z-index: 400; display: flex; gap: 2px; background: rgba(10,8,6,0.8); padding: 6px; border-radius: 30px; border: 1px solid var(--ui-border); backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+.time-node { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; color: var(--muted); padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
+.time-node:hover { color: var(--paper); }
+.time-node.active { background: var(--warm); color: var(--ink); box-shadow: 0 0 15px rgba(220,163,50,0.4); }
+
+/* ─── BOTTOM CARDS ────────────────────────────── */
+#cards{
+  position:absolute;bottom:0;left:0;right:0;z-index:500;
+  display:flex;gap:14px;padding:30px 25px 24px;
+  overflow-x:auto;
+  background:linear-gradient(to top,rgba(10,8,6,1) 0%,rgba(10,8,6,0.7) 60%,transparent 100%);
+  scroll-behavior:smooth;scrollbar-width:none;
+}
+.card{
+  flex-shrink:0;width:200px;
+  background:rgba(16,12,10,0.92);
+  border:1px solid var(--ui-border);cursor:pointer;
+  transition:all .3s cubic-bezier(0.16,1,0.3,1);
+  overflow:hidden;border-radius:8px;
+  backdrop-filter:blur(15px);box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  position:relative;
+}
+.card:hover{border-color:var(--warm);transform:translateY(-8px);box-shadow:0 20px 50px rgba(0,0,0,0.9);}
+.card.active{border-color:var(--red);background:rgba(201,59,46,0.12);transform:translateY(-4px);}
+
+.card-img-wrap{position:relative;width:100%;height:120px;overflow:hidden;background:#110c08;}
+.card-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72) contrast(1.1);transition:opacity .4s,filter .4s,transform .5s;opacity:0;}
+.card-img.loaded{opacity:1;}
+.card:hover .card-img,.card.active .card-img{filter:brightness(1.0) contrast(1);}
+
+.card-stripe{position:absolute;bottom:0;left:0;right:0;height:2px;}
+.card-body{padding:12px 14px;}
+.card-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.card-row svg{width:13px;height:13px;flex-shrink:0;}
+.c-zh{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--paper);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:1px;}
+.c-en{font-style:italic;font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:8px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.c-tag{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;background:rgba(255,255,255,0.07);padding:3px 7px;border-radius:3px;}
+
+.card-fav{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.18);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;backdrop-filter:blur(4px);z-index:10;transition:all 0.2s;cursor:pointer;}
+.card-fav:hover{background:rgba(201,59,46,0.6);}
+.card-fav.saved{background:var(--red);border-color:var(--red);color:white;}
+.card-badge{position:absolute;top:8px;left:8px;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);padding:3px 7px;border-radius:3px;backdrop-filter:blur(4px);letter-spacing:.1em;}
+
+/* ─── DETAIL PANEL ────────────────────────────── */
+#panel{
+  position:absolute;top:0;right:0;bottom:0;width:500px;
+  background:var(--ink);overflow-y:auto;
+  transform:translateX(100%);
+  transition:transform .5s cubic-bezier(0.19,1,0.22,1);
+  border-left:1px solid var(--ui-border);z-index:800;
+  box-shadow:-15px 0 60px rgba(0,0,0,0.95);
+  display:flex;flex-direction:column;
+}
+#panel.open{transform:translateX(0);}
+
+.panel-nav{position:absolute;top:20px;left:20px;right:20px;z-index:20;display:flex;justify-content:space-between;align-items:center;}
+.p-nav-btn{background:rgba(10,8,6,0.7);border:1px solid rgba(255,255,255,0.25);border-radius:20px;cursor:pointer;color:white;font-size:10px;font-family:'Space Mono',monospace;padding:8px 16px;backdrop-filter:blur(10px);transition:all 0.2s;font-weight:bold;}
+.p-nav-btn:hover{background:var(--warm);border-color:var(--warm);color:var(--ink);}
+.pclose{width:40px;height:40px;background:rgba(10,8,6,0.85);border:1px solid rgba(255,255,255,0.25);border-radius:50%;cursor:pointer;color:white;font-size:16px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);transition:all 0.2s;}
+.pclose:hover{background:var(--red);border-color:var(--red);transform:scale(1.1);}
+
+.phero{width:100%;height:320px;position:relative;overflow:hidden;background:#110c08;flex-shrink:0;}
+.phero-img{width:100%;height:100%;object-fit:cover;filter:brightness(0.65) contrast(1.15);transition:transform .6s ease;display:block;}
+.phero:hover .phero-img{transform:scale(1.04);}
+
+.ph-grad{position:absolute;inset:0;background:linear-gradient(to top,var(--ink) 0%,rgba(10,8,6,0.2) 70%);pointer-events:none;}
+.ph-meta{position:absolute;bottom:30px;left:30px;pointer-events:none;}
+.ph-ico{display:flex;align-items:center;gap:12px;}
+.ph-ico svg{width:28px;height:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,1));}
+.ph-cat{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:rgba(255,255,255,.9);letter-spacing:.18em;text-transform:uppercase;margin-top:3px;}
+
+.pbody{padding:20px 42px 80px;flex:1;}
+.pdy{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--warm);margin-bottom:10px;}
+.ptzh{font-family:'Noto Serif SC',serif;font-weight:700;font-size:36px;color:var(--paper);line-height:1.2;margin-bottom:6px;letter-spacing:2px;}
+.pten{font-style:italic;font-size:15px;color:var(--muted);margin-bottom:22px;}
+.ptags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px;}
+.ptag{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;padding:5px 12px;border-radius:4px;border:1px solid rgba(220,163,50,0.35);color:var(--paper);background:rgba(220,163,50,0.08);text-transform:uppercase;letter-spacing:.08em;}
+
+/* Audio Player */
+.audio-player { display: flex; align-items: center; justify-content: space-between; background: rgba(220,163,50,0.05); border: 1px solid rgba(220,163,50,0.3); padding: 14px 20px; border-radius: 8px; margin-bottom: 30px; cursor: pointer; transition: all 0.2s; }
+.audio-player:hover { background: rgba(220,163,50,0.15); border-color: var(--warm); }
+.audio-btn { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: var(--warm); letter-spacing: .15em; display: flex; align-items: center; gap: 8px; }
+.audio-waves { display: flex; gap: 3px; height: 16px; align-items: center; opacity: 0.4; }
+.audio-waves.playing { opacity: 1; }
+.wave { width: 3px; height: 4px; background: var(--warm); border-radius: 2px; transition: height 0.1s; }
+.audio-waves.playing .wave { animation: eq 0.8s ease-in-out infinite alternate; }
+.audio-waves.playing .wave:nth-child(1) { animation-delay: 0.0s; }
+.audio-waves.playing .wave:nth-child(2) { animation-delay: 0.2s; }
+.audio-waves.playing .wave:nth-child(3) { animation-delay: 0.4s; }
+.audio-waves.playing .wave:nth-child(4) { animation-delay: 0.1s; }
+.audio-waves.playing .wave:nth-child(5) { animation-delay: 0.3s; }
+@keyframes eq { 0% { height: 4px; } 100% { height: 16px; } }
+
+.panel-actions{display:flex;gap:12px;margin-bottom:30px;}
+.action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 0;border-radius:6px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:all 0.2s;border:none;outline:none;}
+.btn-dir{background:var(--paper);color:var(--ink);border:1px solid var(--paper);}
+.btn-dir:hover{background:transparent;color:var(--paper);}
+.btn-fav{background:transparent;color:var(--warm);border:1px solid var(--warm);}
+.btn-fav:hover{background:rgba(220,163,50,0.1);}
+.btn-fav.saved{background:var(--warm);color:var(--ink);}
+.btn-itin{background:transparent;color:var(--green);border:1px solid var(--green);}
+.btn-itin:hover{background:rgba(46,125,94,0.15);}
+.btn-itin.added{background:var(--green);color:white;}
+
+.phook{font-style:italic;font-size:17px;line-height:1.7;color:var(--red);border-left:4px solid var(--red);padding-left:18px;margin-bottom:30px;font-weight:600;}
+.pdesc{font-size:14px;line-height:2;color:rgba(255,255,255,0.78);margin-bottom:30px;font-weight:300;}
+.pdesc p{margin-bottom:18px;text-align:justify;}
+.dropcap{float:left;font-size:58px;line-height:50px;padding-top:8px;padding-right:12px;color:var(--warm);font-family:'Noto Serif SC',serif;font-weight:700;}
+
+.pfacts{background:rgba(220,163,50,.04);border:1px solid rgba(220,163,50,.2);padding:22px;margin-bottom:30px;border-radius:8px;}
+.pfacts h4{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--warm);margin-bottom:14px;}
+.frow{display:flex;gap:14px;margin-bottom:10px;font-size:13px;color:var(--paper);line-height:1.6;}
+.frow span:first-child{flex-shrink:0;width:26px;text-align:center;font-size:17px;}
+
+/* ─── ITINERARY PANEL ─────────────────────────── */
+#itin-panel{
+  position:absolute;top:0;left:0;bottom:0;width:360px;
+  background:var(--ink);transform:translateX(-100%);
+  transition:transform .5s cubic-bezier(0.19,1,0.22,1);
+  border-right:1px solid var(--ui-border);z-index:799;overflow-y:auto;
+  box-shadow:15px 0 60px rgba(0,0,0,0.8);
+}
+#itin-panel.open{transform:translateX(0);}
+.itin-header{padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:1px solid var(--ui-border);padding-bottom:18px;}
+.itin-title{font-family:'Noto Serif SC',serif;font-size:20px;color:var(--warm);display:flex;align-items:center;gap:10px;}
+.itin-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;transition:color .2s;}
+.itin-close:hover{color:var(--paper);}
+.itin-body{padding:0 24px 80px;}
+.itin-empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.itin-empty p{font-family:'Space Mono',monospace;font-size:11px;line-height:1.8;letter-spacing:.05em;}
+.itin-item{display:flex;gap:12px;padding:12px;margin-bottom:8px;background:rgba(255,255,255,0.03);border:1px solid var(--ui-border);border-radius:6px;position:relative;cursor:pointer;transition:all .2s;}
+.itin-item:hover{border-color:rgba(220,163,50,0.4);background:rgba(220,163,50,0.04);}
+.itin-item-img{width:50px;height:50px;object-fit:cover;border-radius:4px;flex-shrink:0;filter:brightness(0.75);}
+.itin-item-info{flex:1;min-width:0;}
+.itin-item-zh{font-family:'Noto Serif SC',serif;font-size:14px;color:var(--paper);font-weight:700;}
+.itin-item-cat{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:3px;}
+.itin-item-remove{position:absolute;top:8px;right:8px;background:none;border:none;color:rgba(255,255,255,0.2);cursor:pointer;font-size:14px;transition:color .2s;}
+.itin-item-remove:hover{color:var(--red);}
+
+.itin-actions{display:flex;gap:8px;padding:16px 24px;position:sticky;bottom:0;background:linear-gradient(to top, var(--ink) 70%, transparent);}
+.itin-btn{flex:1;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:12px;border-radius:6px;cursor:pointer;transition:all .2s;border:1px solid var(--ui-border);background:rgba(255,255,255,0.04);color:var(--muted);}
+.itin-btn:hover{border-color:var(--warm);color:var(--warm);}
+
+/* ─── TOAST & EMPTY STATE ─────────────────────── */
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(10px);background:rgba(46,125,94,0.95);color:white;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;padding:10px 24px;border-radius:20px;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+#empty-state{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,8,6,0.82);z-index:450;backdrop-filter:blur(5px);}
+#empty-state h2{font-family:'Space Mono',monospace;color:var(--warm);font-size:14px;margin-bottom:10px;}
+
+@media(max-width:768px){
+  #timeline { bottom: 170px; width: 90%; overflow-x: auto; justify-content: flex-start; }
+  .search-box{width:130px;}
+  .search-box:focus{width:170px;}
+  #panel{width:100%;top:auto;bottom:0;height:90vh;transform:translateY(100%);border-left:none;border-top:2px solid var(--warm);border-radius:24px 24px 0 0;}
+  #panel.open{transform:translateY(0);}
+  #itin-panel{width:100%;}
+  .phero{height:240px;}
+}
+</style>
+</head>
+<body>
+
+<div id="hero" onclick="enterApp()">
+  <div class="hero-bg"></div><div class="hero-grid"></div>
+  <div class="hero-images">
+    <div class="hero-img-strip"><img src="https://images.unsplash.com/photo-1508804185872-d7bad800d9cf?q=80&w=600&auto=format&fit=crop" alt=""/></div>
+    <div class="hero-img-strip"><img src="https://images.unsplash.com/photo-1543013326-805177264a75?q=80&w=600&auto=format&fit=crop" alt=""/></div>
+    <div class="hero-img-strip"><img src="https://images.unsplash.com/photo-1508804052814-cd3ba865a116?q=80&w=600&auto=format&fit=crop" alt=""/></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">An Editorial Guide to Imperial China</div>
+    <div class="hero-title"><span>深</span>游</div>
+    <div class="hero-subtitle">Shenyou · Deep Travel · Beijing</div>
+    <div style="display:flex;gap:44px;margin-bottom:44px;opacity:0;animation:fadeUp .8s ease .8s forwards;">
+      <div style="text-align:center"><div style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--warm)">19</div><div style="font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--muted)">Sites</div></div>
+      <div style="text-align:center"><div style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--warm)">3,000</div><div style="font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--muted)">Years</div></div>
+      <div style="text-align:center"><div style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--warm)">27</div><div style="font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--muted)">Categories</div></div>
+    </div>
+    <button class="hero-cta">Begin Exploring</button>
+  </div>
+</div>
+
+<div id="topbar">
+  <div class="logo-wrap" onclick="resetMapView()"><span class="logo-zh">深游</span><span class="logo-en">SHENYOU</span></div>
+  <div class="nav-right">
+    <div class="live-time"><div class="pulse-dot"></div><span id="clock-widget">--:--</span></div>
+    <button id="btn-surprise" onclick="surpriseMe()" style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--ui-border);padding:5px 12px;letter-spacing:.1em;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase;white-space:nowrap">🎲 SURPRISE</button>
+    <button class="nav-btn" id="itin-toggle-btn" onclick="toggleItinPanel()">📋 ITINERARY (<span id="itin-count">0</span>)</button>
+    <span class="badge" id="fav-counter" onclick="document.getElementById('btn-favorites').click()">0 SAVED</span>
+  </div>
+</div>
+
+<div id="main">
+  <div id="mapwrap">
+    <div id="map"></div>
+    
+    <div id="reset-map" class="custom-map-control" style="top:20px;" title="Reset View" onclick="resetMapView()">⛶</div>
+    <div id="theme-map" class="custom-map-control" style="top:60px;" title="Toggle Map Style" onclick="toggleMapTheme()">🌍</div>
+    <div id="locate-map" class="custom-map-control" style="top:100px;" title="Locate Me" onclick="locateUser()">📍</div>
+    
+    <div id="filterbar">
+      <div class="search-wrap">
+        <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
+        <input type="text" id="search" class="search-box" placeholder="Search sites...">
+      </div>
+      <button class="filt on" onclick="toggleCat('All',this)">All</button>
+      <button class="filt fav-btn" onclick="toggleCat('Favorites',this)" id="btn-favorites">⭐ Saved</button>
+    </div>
+
+    <div id="timeline">
+      <div class="time-node active" onclick="filterDynasty('All', this)">ALL ERAS</div>
+      <div class="time-node" onclick="filterDynasty('Yuan', this)">YUAN</div>
+      <div class="time-node" onclick="filterDynasty('Ming', this)">MING</div>
+      <div class="time-node" onclick="filterDynasty('Qing', this)">QING</div>
+      <div class="time-node" onclick="filterDynasty('Republic', this)">REPUBLIC</div>
+      <div class="time-node" onclick="filterDynasty('Contemporary', this)">MODERN</div>
+    </div>
+
+    <div id="empty-state"><h2>NO LOCATIONS FOUND</h2><p>Try adjusting your search or filters.</p></div>
+
+    <div id="cards"></div>
+
+    <div id="panel">
+      <div class="panel-nav">
+        <button class="p-nav-btn" onclick="prevSite()">← PREV</button>
+        <button class="pclose" onclick="closePanel()">✕</button>
+        <button class="p-nav-btn" onclick="nextSite()">NEXT →</button>
+      </div>
+      <div id="panel-content"></div>
+    </div>
+
+    <div id="itin-panel">
+      <div class="itin-header"><div class="itin-title">📋 My Itinerary</div><button class="itin-close" onclick="toggleItinPanel()">✕</button></div>
+      <div class="itin-body" id="itin-body">
+        <div class="itin-empty" id="itin-empty"><div style="font-size:30px;opacity:0.3;margin-bottom:10px;">🗺</div><p>Add sites to build your trip.</p></div>
+        <div id="itin-list"></div>
+      </div>
+      <div class="itin-actions"><button class="itin-btn" onclick="clearItinerary()">Clear</button><button class="itin-btn" style="background:var(--green);color:white;border:none;" onclick="toggleItinPanel()">View Route Map</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="if(event.target.id==='lightbox')lbClose()" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.97);flex-direction:column;align-items:center;justify-content:center;cursor:zoom-out">
+  <button onclick="lbClose()" style="position:absolute;top:22px;right:26px;background:none;border:none;color:rgba(255,255,255,.4);font-size:26px;cursor:pointer">✕</button>
+  <img id="lb-img" src="" referrerpolicy="no-referrer" style="max-width:90vw;max-height:82vh;object-fit:contain;border-radius:4px;box-shadow:0 30px 100px #000;cursor:default" alt="">
+  <div id="lb-cap" style="margin-top:14px;font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.2em"></div>
+  <div id="lb-dots" style="display:flex;gap:10px;margin-top:10px"></div>
+</div>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script>
+
+// --- THE ULTIMATE IMAGE PROXY ENGINE ---
+// This bypasses Wikipedia's hotlink protection perfectly by using the open-source Weserv image proxy cache.
+function getProxyUrl(url) {
+  if (url.includes('wikimedia.org')) {
+    var bare = url.replace(/^https?:\/\//, ''); return 'https://wsrv.nl/?url=' + bare + '&w=700&output=webp&q=85';
+  }
+  return url;
+}
+
+var ICO={
+  palace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V9l6-6 6 6v12M9 21v-5h6v5"/><path d="M9 9h6"/></svg>',
+  temple:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 8h20L12 2z"/><rect x="4" y="8" width="16" height="13"/><path d="M9 21v-6h6v6"/></svg>',
+  garden:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22V13M12 13C12 13 7 10 7 6a5 5 0 0110 0c0 4-5 7-5 7zM9 17c-2 1-4 3-5 5M15 17c2 1 4 3 5 5"/></svg>',
+  wall:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="14" width="20" height="7"/><path d="M5 14v-4M9 14v-4M13 14v-4M17 14v-4M5 10h4M13 10h4"/></svg>',
+  ruins:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6 21v-8l3-4M18 21v-8l-3-4M9 13h6"/><path stroke-dasharray="2 2" d="M4 17l3-2M20 17l-3-2"/></svg>',
+  mosque:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3C9 3 6 6 6 9c0 3 5 8 6 8s6-5 6-8c0-3-3-6-6-6z"/><path d="M6 21h12M9 21v-4h6v4"/></svg>',
+  buddhist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4H18l-3.5 2.5 1.5 4.5L12 11l-4 3 1.5-4.5L6 7h4.5L12 2z"/><path d="M12 11v10M8 21h8"/></svg>',
+  monument:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21L12 3l5 18H7z"/><path d="M9 12h6M8 21h8"/></svg>',
+  tower:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="4" width="12" height="17" rx="1"/><path d="M9 4V2h6v2M9 9h6M9 14h6"/><rect x="10" y="17" width="4" height="4"/></svg>',
+  education:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M6 10.5v5c0 2 2.7 4 6 4s6-2 6-4v-5M20 8v6"/></svg>',
+  science:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>',
+  bridge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 17h20M2 17V12a10 10 0 0120 0v5"/><path d="M7 17v-5M12 17v-7M17 17v-5"/></svg>',
+  art:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg>',
+  museum:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20M4 22V10M20 22V10M2 10h20M12 2L2 10h20L12 2z"/><rect x="8" y="14" width="3" height="8"/><rect x="13" y="14" width="3" height="8"/></svg>',
+  street:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M3 22L6 8h12l3 14M9 8V5a3 3 0 016 0v3M12 12v4M10 22v-3h4v3"/></svg>',
+  stadium:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="10" rx="10" ry="5"/><path d="M2 10v7c0 2.8 4.5 5 10 5s10-2.2 10-5v-7"/></svg>',
+  ritual:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v5M8 6l4 2 4-2M5 21h14M7 21v-7c2-1 3-3 5-3s3 2 5 3v7"/><circle cx="12" cy="10" r="2"/></svg>',
+  opera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18c0-1.7 1.3-3 3-3s3 1.3 3 3v3H9v-3zM7 8c0-2.8 2.2-5 5-5s5 2.2 5 5c0 2-1 3.5-2.5 4.5S12 15 12 15"/><path d="M8 21h8"/></svg>',
+  hill:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22L12 4l10 18H2z"/><path d="M12 4v7M10 14h4"/></svg>',
+  hutong:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20M4 22v-8M8 22v-8M12 22v-8M16 22v-8M20 22v-8M2 14h20M6 14V9l3-3h6l3 3v5"/></svg>',
+  lake:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0M2 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0M2 7c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>',
+  market:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>',
+  tomb:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 21h12M6 21V12a6 6 0 0112 0v9M9 21v-4h6v4M12 6v4M10 8h4"/></svg>',
+  library:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="3" height="18" rx="1"/><rect x="9" y="5" width="3" height="16" rx="1"/><rect x="14" y="3" width="3" height="18" rx="1"/><path d="M19 8l2 13"/></svg>',
+  park:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-8M8 22h8M7 14c-2-1-3-3-3-5a8 8 0 0116 0c0 2-1 4-3 5H7z"/></svg>',
+  food:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><path d="M6 2v4M10 2v4M14 2v4"/></svg>',
+  modern:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+  gate:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M4 20V8l8-6 8 6v12M9 20v-6h6v6"/></svg>',
+  taoist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18 4.5 4.5 0 000-9 4.5 4.5 0 010-9"/><circle cx="12" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="16.5" r="1.5" fill="currentColor" stroke="none"/></svg>'
+};
+
+var CATS=["Imperial Palace","Ritual Temple","Royal Garden","Military Defense","Memorial Ruins","Buddhist","Taoist","Religious Site","Imperial Structure","Education","Science History","Historic Bridge","Art District","Museum","Historic District","Architecture","Cultural Heritage","Imperial Garden","Political Monument","Hutong","Royal Lake","Market","Imperial Tomb","Library","Park","Food Culture","Modern Heritage"];
+var CAT_COL={"Imperial Palace":"#c93b2e","Ritual Temple":"#4287f5","Royal Garden":"#34a87a","Military Defense":"#dca332","Memorial Ruins":"#9a8c78","Buddhist":"#dca332","Taoist":"#34a87a","Religious Site":"#34a87a","Imperial Structure":"#c93b2e","Education":"#4287f5","Science History":"#9642f5","Historic Bridge":"#dca332","Art District":"#9642f5","Museum":"#9642f5","Historic District":"#dca332","Architecture":"#9642f5","Cultural Heritage":"#c93b2e","Imperial Garden":"#34a87a","Political Monument":"#c93b2e","Hutong":"#dca332","Royal Lake":"#4287f5","Market":"#dca332","Imperial Tomb":"#9a8c78","Library":"#4287f5","Park":"#34a87a","Food Culture":"#c93b2e","Modern Heritage":"#9642f5"};
+
+// Expanded details for core sites to look amazing in the UI.
+var SITES=[
+  {id:1,ico:"palace",zh:"故宫",en:"The Forbidden City",dyn:"Ming·1420",cat:"Imperial Palace",col:"#c8401a",lat:39.9163,lng:116.3972,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/TourismBeijingForbiddenCity.jpg/800px-TourismBeijingForbiddenCity.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Forbidden_City_Moat_From_Northwest.jpg/800px-Forbidden_City_Moat_From_Northwest.jpg",hook:"For 500 years, no ordinary person could cross these walls without facing execution.",desc:"The Forbidden City is not merely a palace; it is a cosmological diagram rendered in brick, wood, and yellow glaze. Designed by Ming architects to place the 'Son of Heaven' at the exact center of the universe, its symmetry is absolute and uncompromising.\n\nFor nearly five centuries, this 720,000-square-meter compound functioned as a self-contained city. The emperors who lived here rarely left. Their lives were governed by strict rituals. The stones beneath your feet in the main courtyards are laid up to 15 layers deep—a paranoid defense against tunneling assassins.",facts:[["📐","720,000 m² — 12× the size of the Vatican"],["👷","Built by 1 million workers over 14 years"]],why:"Stand at the Hall of Supreme Harmony at noon. Every dynasty since 1420 was sustained or surrendered here."},
+  {id:2,ico:"temple",zh:"天坛",en:"Temple of Heaven",dyn:"Ming·1420",cat:"Ritual Temple",col:"#3b6ea5",lat:39.8822,lng:116.4066,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Temple_of_Heaven%2C_Beijing.jpg/800px-Temple_of_Heaven%2C_Beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/The_Hall_of_Prayer_for_Good_Harvests.jpg/800px-The_Hall_of_Prayer_for_Good_Harvests.jpg",hook:"Once a year, the most powerful man on earth came here alone to beg the cosmos for survival.",desc:"While the Forbidden City represents earthly authority, the Temple of Heaven represents cosmic responsibility. This is where the Emperor came to ensure the survival of his civilization through the Winter Solstice sacrifice.\n\nBefore the ceremony, the Emperor would fast for three days. The architecture is pure sacred geometry: square bases represent the earth, circular roofs represent heaven.",facts:[["🔵","Blue roof tiles — a color reserved only for heaven"],["🔇","Constructed entirely without iron nails"]],why:"Arrive at dawn. The contrast between rigid imperial geometry and the fluid life of elderly locals is modern Beijing."},
+  {id:3,ico:"garden",zh:"颐和园",en:"Summer Palace",dyn:"Qing·1750",cat:"Royal Garden",col:"#2e7d5e",lat:39.9998,lng:116.2755,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Summer_Palace_Beijing_overview.jpg/800px-Summer_Palace_Beijing_overview.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Marble_boat_summer_palace.jpg/800px-Marble_boat_summer_palace.jpg",hook:"An empress dowager reportedly spent China's naval budget to build this pleasure garden.",desc:"The Summer Palace is the masterpiece of Chinese landscape garden design, but it is also a monument to imperial hubris. Centered on Longevity Hill and the massive, artificial Kunming Lake.\n\nIts most infamous structure is the Marble Boat. Legend holds that Empress Dowager Cixi diverted 30 million silver taels intended for modernizing the Beiyang Fleet to rebuild this garden instead.",facts:[["🖼️","The Long Corridor contains 14,000+ unique paintings"],["⚓","The Marble Boat was funded by diverted naval money"]],why:"Find the Marble Boat. Touch the stone. It is a beautiful pavilion, and it cost an empire its future."},
+  {id:4,ico:"wall",zh:"慕田峪长城",en:"Mutianyu Great Wall",dyn:"Ming·1368",cat:"Military Defense",col:"#8a6a3a",lat:40.432,lng:116.568,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Mutianyu_Great_Wall_1.jpg/800px-Mutianyu_Great_Wall_1.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/The_Great_Wall_of_China_at_Jinshanling-edit.jpg/800px-The_Great_Wall_of_China_at_Jinshanling-edit.jpg",hook:"The greatest physical labor effort in human history. Millions died building it. And in the end, it barely worked.",desc:"The Great Wall is not a single structure, but a series of desperate fortifications built over millennia to keep the nomadic cavalry of the steppes out of the agrarian heartland. The Mutianyu section represents the peak of Ming military architecture.\n\nThe engineering remains astonishing. The mortar binding these massive granite blocks was made from slaked lime and sticky rice flour—a biological polymer so strong that weeds still cannot grow between the bricks 600 years later.",facts:[["📏","The entire wall network stretches 21,196 kilometers"],["🍚","Bound together with sticky rice flour mortar"]],why:"Climb to Watchtower 20. Look at how the wall vanishes over ridges that seem too steep to walk."},
+  {id:5,ico:"ruins",zh:"圆明园遗址",en:"Old Summer Palace Ruins",dyn:"Qing·1860",cat:"Memorial Ruins",col:"#6a6560",lat:40.009,lng:116.2974,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Old_Summer_Palace_Ruins.jpg/800px-Old_Summer_Palace_Ruins.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Beijing_Yuanmingyuan_2011_02.jpg/800px-Beijing_Yuanmingyuan_2011_02.jpg",hook:"It took 3,500 British and French soldiers three full days to burn down what 150 years of imperial wealth had built.",desc:"Yuanmingyuan was once known as the 'Garden of Gardens.' It was five times the size of the Forbidden City, containing the empire's greatest artworks and European-style baroque palaces.\n\nIn October 1860, Lord Elgin ordered the total destruction of the palace as collective punishment. Today, the ruins are deliberately kept exactly as they were left. It is maintained not as a park, but as a deliberate, open wound.",facts:[["🔥","Took 3 days of constant fire to destroy"],["🏺","Looted artifacts still in European museums"]],why:"Walk slowly through the European Palace section. These ruins are not kept this way due to neglect. They are kept this way on purpose."},
+  {id:6,ico:"buddhist",zh:"雍和宫",en:"Lama Temple",dyn:"Qing·1744",cat:"Buddhist",col:"#8b4010",lat:39.947,lng:116.4107,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Yonghe_Temple_Beijing_2.jpg/800px-Yonghe_Temple_Beijing_2.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Yonghe_Temple.jpg/800px-Yonghe_Temple.jpg",hook:"A prince's palace converted into a monastery as an act of sheer political genius—holding an empire together for 300 years.",desc:"Before it was a temple, this was the residence of Prince Yong. When he ascended to the throne, his former home was converted into a Tibetan Buddhist lamasery to cement Qing authority over Mongol and Tibetan populations.\n\nIn the final hall stands a 26-meter-tall statue of the Maitreya Buddha, carved from a single sandalwood trunk imported from Nepal. The pavilion had to be built around the statue after it was erected.",facts:[["📏","Maitreya Buddha: 26m tall (8m underground)"],["🌲","Carved from a single imported sandalwood trunk"]],why:"This is not a museum; it is a deeply active place of worship. Stand by the incense burners on a Tuesday morning."},
+  {id:7,ico:"tower",zh:"鼓楼与钟楼",en:"Drum & Bell Tower",dyn:"Yuan·1272",cat:"Imperial Structure",col:"#7a5520",lat:39.9393,lng:116.3957,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Beijing_Drum_Tower_2006.jpg/800px-Beijing_Drum_Tower_2006.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Beijing_Bell_Tower.jpg/800px-Beijing_Bell_Tower.jpg",hook:"Before smartphones, before pocket watches, these twin towers dictated the rhythm of life for an entire city for seven centuries.",desc:"Standing at the northern terminus of Beijing's ancient 7.8-kilometer central axis, the Drum and Bell Towers were the official timepieces of the empire.\n\nThe Drum Tower once housed 24 drums representing the solar terms. At dusk, the drums thundered across the courtyard houses, signaling the night curfew. At dawn, the massive 63-ton bronze bell in the Bell Tower would wake the city.",facts:[["🥁","Housed 25 drums tied to the solar calendar"],["🔔","The bronze bell weighs 63 tons, 3 meters wide"]],why:"Climb the steep stairs at golden hour. Look south over the hutong rooftops. This is the exact view that Beijing was designed around."},
+  {id:8,ico:"education",zh:"孔庙",en:"Confucius Temple",dyn:"Yuan·1302",cat:"Education",col:"#3b6ea5",lat:39.9474,lng:116.4099,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Beijing_Confucius_Temple.jpg/800px-Beijing_Confucius_Temple.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Guozijian_Beijing.jpg/800px-Guozijian_Beijing.jpg",hook:"For 1,300 years, China was run not by aristocrats, but by the men who passed the examinations held in these halls.",desc:"The Imperial Academy and the adjoining Confucius Temple represent the intellectual core of ancient China. To achieve power, a man had to pass the grueling, multi-day imperial examinations based on Confucian classics.\n\nIn the courtyards you will find the 'Forest of Steles'—198 massive stone tablets bearing the names of all 51,624 scholars who passed the highest examinations.",facts:[["🪨","198 steles bear 51,624 scholars' names"],["🎓","Highest degree pass rate: less than 1%"]],why:"Walk through the stone tablets. Someone devoted their entire life to passing those exams. Their name was carved here."},
+  {id:9,ico:"garden",zh:"北海公园",en:"Beihai Park",dyn:"Jin·1179",cat:"Royal Garden",col:"#2e7d5e",lat:39.9251,lng:116.3899,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Beihai_park_beijing.jpg/800px-Beihai_park_beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/White_Pagoda_Beihai_Park_Beijing_China.jpg/800px-White_Pagoda_Beihai_Park_Beijing_China.jpg",hook:"The oldest imperial garden in China. Kublai Khan hosted legendary feasts here.",desc:"Before the Forbidden City existed, there was Beihai. Founded in 1179 during the Jin Dynasty, it is the oldest ancient imperial garden in China.\n\nIn the Round City sits a massive jade vessel commissioned by Kublai Khan in 1265 to hold wine for his banquets — it can hold 3,500 liters. Dominating the skyline is the White Dagoba, built in 1651.",facts:[["📅","Founded in 1179 — approaching 900 years old"],["🍷","Features a 3,500-liter jade wine bowl from Kublai Khan"]],why:"This lake has been a place of leisure, politics, and power for nearly 900 years. Rent a small boat in summer."},
+  {id:10,ico:"mosque",zh:"牛街清真寺",en:"Niujie Mosque",dyn:"Liao·996",cat:"Religious Site",col:"#2e7d5e",lat:39.8936,lng:116.3614,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Niujie_Mosque_Beijing.jpg/800px-Niujie_Mosque_Beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Niujie_mosque_interior.jpg/800px-Niujie_mosque_interior.jpg",hook:"Beijing has had an active Muslim community for over a thousand years. This temple is their anchor.",desc:"The Niujie Mosque, founded in 996 AD by an Arab scholar, is the oldest mosque in the capital. It was built using traditional Chinese timber-frame architecture, resembling a Buddhist temple from the outside.\n\nBut step inside, and the hybrid nature reveals itself. The main prayer hall is strictly aligned to face Mecca, filled with a stunning fusion of Islamic geometric patterns and Arabic calligraphy.",facts:[["📅","Founded in 996 AD, during the Liao dynasty"],["🕌","Exterior is classic Chinese; interior is Islamic"]],why:"Walk through the courtyards on a Friday afternoon. The fusion of Chinese architecture and Islamic prayer is a reminder of how deeply connected Beijing has always been to the Silk Road."},
+  {id:11,ico:"monument",zh:"天安门广场",en:"Tiananmen Square",dyn:"Contemporary",cat:"Political Monument",col:"#c8401a",lat:39.9055,lng:116.3976,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tiananmen_Square_%28Beijing%29.jpg/800px-Tiananmen_Square_%28Beijing%29.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Tiananmen_Square_flag_raising.jpg/800px-Tiananmen_Square_flag_raising.jpg",hook:"Designed to make individuals feel small before the state.",desc:"440,000 m², capacity 1 million. The flag ceremony is timed to exactly match the sunrise.",facts:[["📏","440,000 m² — one of the world's largest"],["🚩","Flag ceremony timed to exact sunrise"]],why:"Go at dawn for the flag-raising. Thousands standing in the dark, waiting."},
+  {id:12,ico:"hill",zh:"景山公园",en:"Jingshan Park",dyn:"Ming·1420",cat:"Imperial Garden",col:"#2e7d5e",lat:39.9237,lng:116.3872,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Jingshan_Park_Beijing.jpg/800px-Jingshan_Park_Beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Forbidden_City_from_Coal_Hill.jpg/800px-Forbidden_City_from_Coal_Hill.jpg",hook:"The last Ming emperor hanged himself here. Best panoramic view in Beijing.",desc:"An artificial hill built from the Forbidden City's moat excavation.",facts:[["🏔️","Artificial hill — Forbidden City moat soil"],["👑","Chongzhen Emperor died here, 1644"]],why:"Climb at golden hour and look south. A sea of gold all the way to Tiananmen."},
+  {id:13,ico:"art",zh:"798艺术区",en:"798 Art District",dyn:"Contemporary",cat:"Art District",col:"#5a3a8a",lat:39.9839,lng:116.4994,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/798_Art_District_Beijing.jpg/800px-798_Art_District_Beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/798_art_zone_beijing.jpg/800px-798_art_zone_beijing.jpg",hook:"A Cold War weapons factory built by East Germans is now Beijing's most important art hub.",desc:"1950s East German engineers built this military electronics factory. Artists squatted it c.2002. Maoist slogans are preserved on gallery walls.",facts:[["🏭","East German engineers, 1950s military use"],["🎭","Artists squatted c.2002"]],why:"Find a building with original slogans on the walls and stand in it looking at contemporary art."},
+  {id:14,ico:"stadium",zh:"鸟巢",en:"Bird's Nest",dyn:"Contemporary",cat:"Architecture",col:"#5a3a8a",lat:39.9929,lng:116.3971,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Birds_Nest_stadium_2009.jpg/800px-Birds_Nest_stadium_2009.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Beijing_National_Stadium_2014.jpg/800px-Beijing_National_Stadium_2014.jpg",hook:"42,000 tons of steel, no internal columns.",desc:"Designed with Ai Weiwei — who later called it propaganda and went into exile. The 2008 Olympic opening ceremony was watched by 1 billion people.",facts:[["🏗️","42,000 tons of steel, no columns"],["🎨","Ai Weiwei: consultant, then government critic"]],why:"Swiss design. Chinese construction. A dissident's collaboration. No building holds more contradictions."},
+  {id:15,ico:"museum",zh:"国家博物馆",en:"National Museum",dyn:"Contemporary",cat:"Museum",col:"#5a3a8a",lat:39.9053,lng:116.4018,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/National_Museum_of_China.jpg/800px-National_Museum_of_China.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/NMC_China_Bronze_Age.jpg/800px-NMC_China_Bronze_Age.jpg",hook:"World's largest museum. Contains the full arc of Chinese civilization.",desc:"192,000 m². Shang bronzes from 1600 BC containing the earliest Chinese writing.",facts:[["📐","192,000 m² — world's largest museum"],["🏺","Shang bronzes: 1600 BC"]],why:"Two hours in the ancient bronzes gallery. Feel the weight."},
+  {id:16,ico:"street",zh:"大栅栏",en:"Dashilar",dyn:"Qing",cat:"Historic District",col:"#8b4010",lat:39.8987,lng:116.3936,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Dashilar_Beijing.jpg/800px-Dashilar_Beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Qianmen_Street_Beijing.jpg/800px-Qianmen_Street_Beijing.jpg",hook:"Commercial heart of imperial Beijing for 600 years.",desc:"Tongrentang pharmacy (1669), Neiliansheng shoes (1853), Ruifuxiang silk (1893) — still operating on the same streets.",facts:[["📅","600+ years of continuous commerce"],["💊","Tongrentang pharmacy: founded 1669"]],why:"These shops have been here longer than most countries have existed."},
+  {id:17,ico:"hutong",zh:"南锣鼓巷",en:"Nanluoguxiang",dyn:"Yuan",cat:"Hutong",col:"#7a5520",lat:39.9364,lng:116.4008,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Nanluoguxiang.jpg/800px-Nanluoguxiang.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Nanluoguxiang_hutong_2014.jpg/800px-Nanluoguxiang_hutong_2014.jpg",hook:"One of the oldest hutong streets in Beijing — 700 years in a single alley.",desc:"Dating to Yuan dynasty, 786m long, 16 hutong branching off each side.",facts:[["📅","700+ years old — Yuan dynasty"],["📏","786m, 16 branching hutong"]],why:"Go on a weekday morning before the crowds. The branching hutong are where the real city exists."},
+  {id:18,ico:"lake",zh:"什刹海",en:"Shichahai Lakes",dyn:"Yuan",cat:"Royal Lake",col:"#1e5a8a",lat:39.939,lng:116.377,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Shichahai_Beijing.jpg/800px-Shichahai_Beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Shichahai_ice_rink.jpg/800px-Shichahai_ice_rink.jpg",hook:"Kublai Khan's capital ended here.",desc:"Three interconnected lakes — northern terminus of the Grand Canal under Kublai Khan. Imperial ice harvest every winter.",facts:[["💧","3 lakes: Qianhai, Houhai, Xihai"],["🚣","Grand Canal's northern terminus"]],why:"The same water that carried grain to feed the imperial capital. Now it reflects neon bar signs at night."},
+  {id:19,ico:"modern",zh:"央视大楼",en:"CCTV Headquarters",dyn:"Contemporary",cat:"Architecture",col:"#5a3a8a",lat:39.9154,lng:116.456,img1:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/CCTV_Headquarters_Beijing.jpg/800px-CCTV_Headquarters_Beijing.jpg",img2:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/CCTV_HQ_night.jpg/800px-CCTV_HQ_night.jpg",hook:"Rem Koolhaas's 'Big Pants' — the most audacious skyscraper built in the 21st century.",desc:"Two leaning towers connected by an overhanging loop — 234m. New structural calculations required.",facts:[["🏗️","Two leaning towers + 75m cantilever loop"],["🩲","Nickname: 大裤衩 (Big Underpants)"]],why:"The nickname emerged within days of the design release. Beijingers are very direct."}
+];
+
+// ── APP STATE ─────────────────────────────────────
+var map, activeId=null, markers={}, visibleCats={"All":true}, visibleDynasty="All";
+var clusterGroup;
+var favorites=[], itinerary=[];
+var currentTheme = 'dark';
+var tileLayer;
+var itinLayer = null;
+
+try{ var sf=localStorage.getItem('shenyou_favs'); if(sf) favorites=JSON.parse(sf); }catch(e){}
+try{ var si=localStorage.getItem('shenyou_itin'); if(si) itinerary=JSON.parse(si); }catch(e){}
+
+// ── TIME WIDGET ───────────────────────────────────
+function updateTime() {
+    var beijingTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit' });
+    var clock = document.getElementById('clock-widget');
+    if(clock) clock.textContent = beijingTime;
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// ── HERO ENTER ────────────────────────────────────
+function enterApp(){
+  var h=document.getElementById('hero');
+  h.style.opacity='0';
+  setTimeout(function(){h.classList.add('gone');initMap();},800);
+}
+
+// ── TOAST ─────────────────────────────────────────
+var toastTimer;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('on');},2400);
+}
+
+// ── MAP INITIALIZATION ────────────────────────────
+function initMap(){
+  document.getElementById('fav-counter').textContent=favorites.length+' SAVED';
+  
+  try{
+    map=L.map('map',{zoomControl:false, minZoom:10});
+    map.setView([39.93, 116.39], 11);
+
+    tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      attribution:'© OpenStreetMap',subdomains:'abcd',maxZoom:18
+    }).addTo(map);
+
+    L.control.zoom({position:'topright'}).addTo(map);
+    itinLayer = L.layerGroup().addTo(map);
+
+    clusterGroup=L.markerClusterGroup({
+      iconCreateFunction:function(c){
+        return L.divIcon({html:'<div><span>'+c.getChildCount()+'</span></div>',className:'marker-cluster-custom',iconSize:L.point(40,40)});
+      },
+      showCoverageOnHover:false,maxClusterRadius:50,spiderfyOnMaxZoom:true
+    });
+
+    SITES.forEach(function(s){
+      var icon=L.divIcon({html:makePin(s,false),className:'',iconSize:[34,44],iconAnchor:[17,44]});
+      var mk=L.marker([s.lat,s.lng],{icon:icon})
+        .bindTooltip(s.zh,{permanent:false,direction:'top',offset:[0,-46]})
+        .on('click',function(){openSite(s);});
+      markers[s.id]=mk;
+      clusterGroup.addLayer(mk);
+    });
+
+    map.addLayer(clusterGroup);
+    buildUI();
+    document.getElementById('itin-count').textContent=itinerary.length;
+    renderItinerary();
+    setTimeout(function(){map.invalidateSize();},200);
+
+  }catch(e){ console.error('Map init error:',e); }
+}
+
+function resetMapView(){if(map) map.flyTo([39.93,116.39],11,{duration:1.5});}
+
+function toggleMapTheme() {
+    if(currentTheme === 'dark') {
+        tileLayer.setUrl('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+        currentTheme = 'satellite';
+        showToast("Satellite View Active");
+    } else {
+        tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+        currentTheme = 'dark';
+        showToast("Editorial View Active");
+    }
+}
+
+function locateUser() {
+    if (!navigator.geolocation) { showToast("GPS not supported"); return; }
+    showToast("Locating...");
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        if(map) {
+            map.flyTo([pos.coords.latitude, pos.coords.longitude], 14, {duration: 1.5});
+            L.circleMarker([pos.coords.latitude, pos.coords.longitude], {radius: 8, fillColor: '#00f0ff', color: '#fff', weight: 2, fillOpacity: 1}).addTo(map).bindTooltip("You are here").openTooltip();
+        }
+    }, function() { showToast("GPS Permission Denied"); });
+}
+
+function makePin(site,active){
+  var col=CAT_COL[site.cat]||'#c93b2e';
+  var s=active?1.4:1;
+  var isFav=favorites.indexOf(site.id)!==-1;
+  var favStar=isFav?'<circle cx="28" cy="6" r="5" fill="#dca332"/><text x="28" y="8.5" font-size="7" fill="#000" text-anchor="middle">★</text>':'';
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+(34*s)+'" height="'+(44*s)+'" viewBox="0 0 34 44">'+
+    '<defs><filter id="sh'+site.id+'"><feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.75"/></filter></defs>'+
+    '<g filter="url(#sh'+site.id+')">'+
+    '<path d="M17 2C9.8 2 4 7.8 4 15c0 9.5 13 27 13 27S30 24.5 30 15C30 7.8 24.2 2 17 2z" fill="'+col+'" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>'+
+    '<g transform="translate(8,6) scale(0.53)" color="white">'+(ICO[site.ico]||'')+'</g>'+
+    favStar+
+    '</g></svg>';
+}
+
+// ── UI BUILD ──────────────────────────────────────
+function buildUI(){
+  var cards=document.getElementById('cards');
+  
+  SITES.forEach(function(s){
+    var col=CAT_COL[s.cat]||'#dca332';
+    var c=document.createElement('div');
+    c.className='card';c.id='c'+s.id;
+
+    var isFav=favorites.indexOf(s.id)!==-1;
+    var safeCat=s.cat.replace(/'/g,"\\'");
+
+    c.innerHTML=
+      '<div class="card-img-wrap">'+
+        '<div class="shimmer"></div>'+
+        '<img class="card-img" src="'+getProxyUrl(s.img1)+'" '+
+          'onload="this.classList.add(\'loaded\');this.previousElementSibling.style.display=\'none\'" '+
+          'onerror="window.handleImageError(this,\''+safeCat+'\')">'+
+        '<div class="card-stripe" style="background:'+col+';"></div>'+
+      '</div>'+
+      '<div class="card-badge">'+s.dyn+'</div>'+
+      '<div id="cfav-'+s.id+'" class="card-fav'+(isFav?' saved':'')+'" onclick="event.stopPropagation();toggleFavorite('+s.id+');">'+(isFav?'★':'☆')+'</div>'+
+      '<div class="card-body">'+
+        '<div class="card-row" style="color:'+col+'">'+(ICO[s.ico]||'')+' <span class="c-zh">'+s.zh+'</span></div>'+
+        '<span class="c-en">'+s.en+'</span>'+
+        '<span class="c-tag" style="color:'+col+'">'+s.cat+'</span>'+
+      '</div>';
+
+    c.onclick=function(){openSite(s);};
+    cards.appendChild(c);
+  });
+
+  document.getElementById('search').addEventListener('input',function(e){ applyFilters(); });
+}
+
+// ── FILTERING ─────────────────────────────────────
+function filterDynasty(dyn, btn) {
+    visibleDynasty = dyn;
+    document.querySelectorAll('.time-node').forEach(function(n){ n.classList.remove('active'); });
+    btn.classList.add('active');
+    applyFilters();
+}
+
+function toggleCat(cat, btn) {
+  document.getElementById('search').value='';
+  var allFilts=document.querySelectorAll('.filt');
+
+  if(cat==='All'){
+    visibleCats={'All':true};
+    allFilts.forEach(function(f){f.classList.remove('on');});
+    btn.classList.add('on');
+  } else if(cat==='Favorites'){
+    visibleCats={'Favorites':true};
+    allFilts.forEach(function(f){f.classList.remove('on');});
+    btn.classList.add('on');
+  } else {
+    delete visibleCats['All'];delete visibleCats['Favorites'];
+    var allBtn=document.querySelector('.filt:not(.fav-btn)');
+    if(allBtn) allBtn.classList.remove('on');
+    document.getElementById('btn-favorites').classList.remove('on');
+    
+    if(visibleCats[cat]){delete visibleCats[cat];btn.classList.remove('on');}
+    else{visibleCats[cat]=true;btn.classList.add('on');}
+    
+    if(!Object.keys(visibleCats).length){visibleCats['All']=true;if(allBtn) allBtn.classList.add('on');}
+  }
+  applyFilters();
+}
+
+function applyFilters(){
+  var term=document.getElementById('search').value.toLowerCase();
+  clusterGroup.clearLayers();
+  var found=0;
+  
+  SITES.forEach(function(s){
+    var catMatch=visibleCats['All']||(visibleCats['Favorites']?favorites.indexOf(s.id)!==-1:visibleCats[s.cat]);
+    var dynMatch=visibleDynasty==='All'||s.dyn.includes(visibleDynasty);
+    var textMatch=!term||s.zh.toLowerCase().indexOf(term)!==-1||s.en.toLowerCase().indexOf(term)!==-1;
+    
+    var show=catMatch && dynMatch && textMatch;
+    
+    var c=document.getElementById('c'+s.id);
+    if(c) c.style.display=show?'':'none';
+    if(show){clusterGroup.addLayer(markers[s.id]);found++;}
+  });
+  document.getElementById('empty-state').style.display=found===0?'flex':'none';
+}
+
+// ── AUDIO ─────────────────────────────────────────
+var isPlayingAudio = false;
+function toggleAudio() {
+    isPlayingAudio = !isPlayingAudio;
+    var waves = document.getElementById('audio-waves');
+    var btn = document.getElementById('audio-btn');
+    if (isPlayingAudio) {
+        waves.classList.add('playing');
+        btn.innerHTML = "⏸ PAUSE AUDIO";
+    } else {
+        waves.classList.remove('playing');
+        btn.innerHTML = "▶ AUDIO GUIDE";
+    }
+}
+
+// ── OPEN SITE ─────────────────────────────────────
+function openSite(site){
+  if(!site) return;
+  isPlayingAudio = false;
+
+  if(activeId!==null){
+    var pc=document.getElementById('c'+activeId);if(pc) pc.classList.remove('active');
+    var pm=markers[activeId];
+    if(pm){var ps=SITES.find(function(x){return x.id===activeId;});if(ps){var pi=L.divIcon({html:makePin(ps,false),className:'',iconSize:[34,44],iconAnchor:[17,44]});pm.setIcon(pi);}}
+  }
+  activeId=site.id;
+  var card=document.getElementById('c'+site.id);
+  if(card){card.classList.add('active');card.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+  var mk=markers[site.id];
+  if(mk){var ai=L.divIcon({html:makePin(site,true),className:'',iconSize:[48,62],iconAnchor:[24,62]});mk.setIcon(ai);}
+
+  var isMobile=window.innerWidth<=768;
+  clusterGroup.zoomToShowLayer(mk,function(){map.flyTo([site.lat+(isMobile?-0.015:0),site.lng-(isMobile?0:0.045)],15,{duration:1.2});});
+
+  var col=CAT_COL[site.cat]||'#dca332';
+  var fh=site.facts.map(function(f){return '<div class="frow"><span>'+f[0]+'</span><span>'+f[1]+'</span></div>';}).join('');
+  var paddedId=('000'+site.id).slice(-3);
+  var tagsHtml='<span class="ptag">'+site.cat+'</span><span class="ptag">'+site.dyn+'</span>';
+  var isFav=favorites.indexOf(site.id)!==-1;
+  var inItin=itinerary.indexOf(site.id)!==-1;
+
+  var paragraphs=site.desc.split('\n\n');
+  var formattedDesc='';
+  if(paragraphs.length>0){
+    var fp=paragraphs[0];
+    formattedDesc+='<p><span class="dropcap">'+fp.charAt(0)+'</span>'+fp.substring(1)+'</p>';
+    for(var j=1;j<paragraphs.length;j++) formattedDesc+='<p>'+paragraphs[j]+'</p>';
+  }
+
+  var safeCat=site.cat.replace(/'/g,"\\'");
+
+  document.getElementById('panel-content').innerHTML=
+    '<div class="phero">'+
+      '<img class="phero-img" src="'+getProxyUrl(site.img1)+'" onload="this.classList.add(\'loaded\')" onerror="window.handleImageError(this,\''+safeCat+'\')">'+
+      '<div class="ph-grad"></div>'+
+      '<div class="ph-meta"><div class="ph-ico" style="color:'+col+'">'+(ICO[site.ico]||'')+'<span class="ph-cat">'+site.cat+'</span></div></div>'+
+      '<div class="ph-num">SITE '+paddedId+'</div>'+
+    '</div>'+
+    '<div class="pbody">'+
+      '<div class="pdy">'+site.dyn+'</div>'+
+      '<div class="ptzh">'+site.zh+'</div>'+
+      '<div class="pten">'+site.en+'</div>'+
+      '<div class="ptags">'+tagsHtml+'</div>'+
+      '<div class="pdiv" style="background:'+col+'"></div>'+
+      
+      '<div class="audio-player" onclick="toggleAudio()">'+
+        '<div class="audio-btn" id="audio-btn">▶ AUDIO GUIDE</div>'+
+        '<div class="audio-waves" id="audio-waves"><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div></div>'+
+      '</div>'+
+      
+      '<div class="panel-actions">'+
+        '<button class="action-btn btn-fav'+(isFav?' saved':'')+'" id="panel-fav-btn" onclick="toggleFavorite('+site.id+')">'+(isFav?'★ SAVED':'☆ SAVE')+'</button>'+
+        '<button class="action-btn btn-itin'+(inItin?' added':'')+'" id="panel-itin-btn" onclick="addToItinerary('+site.id+')">'+(inItin?'✓ IN ITINERARY':'+ ADD TO TRIP')+'</button>'+
+      '</div>'+
+      '<div class="phook">'+site.hook+'</div>'+
+      '<div class="pdesc">'+formattedDesc+'</div>'+
+      '<div class="pfacts"><h4>Quick Facts</h4>'+fh+'</div>'+
+      (site.why ? '<div class="pwhy"><h4>Insider Tip</h4><p>'+site.why+'</p></div>' : '')+
+      '<button class="action-btn btn-dir" style="width:100%" onclick="window.open(\'https://maps.google.com/?q='+site.lat+','+site.lng+'\')">📍 GET DIRECTIONS (MAPS)</button>'+
+    '</div>';
+
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('panel').scrollTop=0;
+}
+
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  isPlayingAudio = false;
+  if(activeId!==null){
+    var c=document.getElementById('c'+activeId);if(c) c.classList.remove('active');
+    var mk=markers[activeId];
+    if(mk){var s=SITES.find(function(x){return x.id===activeId;});if(s){var ni=L.divIcon({html:makePin(s,false),className:'',iconSize:[34,44],iconAnchor:[17,44]});mk.setIcon(ni);}}
+    activeId=null;
+  }
+}
+
+function nextSite(){
+    if(activeId===null)return;
+    var list=SITES.filter(function(s){var c=document.getElementById('c'+s.id);return c&&c.style.display!=='none';});
+    var i=list.findIndex(function(s){return s.id===activeId;});
+    if(i!==-1&&i<list.length-1) openSite(list[i+1]);
+}
+function prevSite(){
+    if(activeId===null)return;
+    var list=SITES.filter(function(s){var c=document.getElementById('c'+s.id);return c&&c.style.display!=='none';});
+    var i=list.findIndex(function(s){return s.id===activeId;});
+    if(i>0) openSite(list[i-1]);
+}
+
+// ── ITINERARY & FAVORITES LOGIC ───────────────────
+function toggleFavorite(id){
+  var idx=favorites.indexOf(id);
+  if(idx===-1){favorites.push(id);showToast('★ Added to saved');}else{favorites.splice(idx,1);showToast('Removed from saved');}
+  try{localStorage.setItem('shenyou_favs',JSON.stringify(favorites));}catch(e){}
+  document.getElementById('fav-counter').textContent=favorites.length+' SAVED';
+  var fb=document.getElementById('panel-fav-btn');if(fb){fb.classList.toggle('saved',favorites.indexOf(id)!==-1);fb.innerHTML=favorites.indexOf(id)!==-1?'★ SAVED':'☆ SAVE';}
+  var cfav=document.getElementById('cfav-'+id);if(cfav){cfav.classList.toggle('saved',favorites.indexOf(id)!==-1);cfav.innerHTML=favorites.indexOf(id)!==-1?'★':'☆';}
+  var mk=markers[id];if(mk){var s=SITES.find(function(x){return x.id===id;});if(s){var ni=L.divIcon({html:makePin(s,activeId===id),className:'',iconSize:activeId===id?[48,62]:[34,44],iconAnchor:activeId===id?[24,62]:[17,44]});mk.setIcon(ni);}}
+  if(visibleCats['Favorites']) applyFilters();
+}
+
+function addToItinerary(id){
+  if(itinerary.indexOf(id)!==-1){showToast('Already in itinerary');return;}
+  itinerary.push(id);
+  try{localStorage.setItem('shenyou_itin',JSON.stringify(itinerary));}catch(e){}
+  renderItinerary();
+  var b=document.getElementById('panel-itin-btn');if(b){b.classList.add('added');b.innerHTML='✓ IN ITINERARY';}
+  document.getElementById('itin-count').textContent=itinerary.length;
+  showToast('✓ Added to Trip');
+}
+
+function removeFromItinerary(id){
+  var idx=itinerary.indexOf(id);
+  if(idx!==-1) itinerary.splice(idx,1);
+  try{localStorage.setItem('shenyou_itin',JSON.stringify(itinerary));}catch(e){}
+  renderItinerary();
+  document.getElementById('itin-count').textContent=itinerary.length;
+  var b=document.getElementById('panel-itin-btn');if(b&&activeId===id){b.classList.remove('added');b.innerHTML='+ ADD TO TRIP';}
+}
+
+function clearItinerary(){
+  itinerary=[];
+  try{localStorage.setItem('shenyou_itin',JSON.stringify(itinerary));}catch(e){}
+  renderItinerary();
+  document.getElementById('itin-count').textContent=0;
+  showToast('Itinerary cleared');
+}
+
+function updateItinLine() {
+    if(!itinLayer || !map) return;
+    itinLayer.clearLayers();
+    if(itinerary.length > 1) {
+        var latlngs = itinerary.map(function(id) { var s = SITES.find(function(x) { return x.id === id; }); return [s.lat, s.lng]; });
+        L.polyline(latlngs, {color: '#2e7d5e', weight: 4, dashArray: '8, 12', lineCap: 'round'}).addTo(itinLayer);
+        latlngs.forEach(function(ll, i) {
+            L.circleMarker(ll, {radius: 6, fillColor: '#2e7d5e', color: '#fff', weight: 2, fillOpacity: 1}).bindTooltip("Stop " + (i+1), {permanent: true, direction: 'right', className: 'itin-map-label', offset:[6,0]}).addTo(itinLayer);
+        });
+    }
+}
+
+function renderItinerary(){
+  var body=document.getElementById('itin-list');
+  var empty=document.getElementById('itin-empty');
+  updateItinLine();
+  if(!itinerary.length){empty.style.display='block';body.innerHTML='';return;}
+  empty.style.display='none';
+  var html='<div class="itin-day-head">YOUR ROUTE</div>';
+  itinerary.forEach(function(sid){
+    var s=SITES.find(function(x){return x.id===sid;});
+    if(!s) return;
+    html+='<div class="itin-item" onclick="openSite(SITES.find(function(x){return x.id==='+sid+';}));toggleItinPanel();">';
+    html+='<div style="width:50px;height:50px;background:#110c08;border-radius:4px;overflow:hidden;flex-shrink:0;"><img src="'+getProxyUrl(s.img1)+'" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.75)" onerror="this.style.display=\'none\'"></div>';
+    html+='<div class="itin-item-info"><div class="itin-item-zh">'+s.zh+'</div><div class="itin-item-cat">'+s.cat+'</div></div>';
+    html+='<button class="itin-item-remove" onclick="event.stopPropagation();removeFromItinerary('+sid+');">✕</button>';
+    html+='</div>';
+  });
+  body.innerHTML=html;
+}
+
+function toggleItinPanel(){
+  var p=document.getElementById('itin-panel');
+  p.classList.toggle('open');
+  document.getElementById('itin-toggle-btn').classList.toggle('active',p.classList.contains('open'));
+  renderItinerary();
+  if(p.classList.contains('open') && itinerary.length > 0 && itinLayer) {
+      var latlngs = itinerary.map(function(id) { var s = SITES.find(function(x) { return x.id === id; }); return [s.lat, s.lng]; });
+      map.fitBounds(L.polyline(latlngs).getBounds(), {padding: [80, 80]});
+  }
+}
+
+// ── LIGHTBOX ────────────────────────────────────────────────────────────
+var _lbImgs=[], _lbIdx=0;
+function lbOpen(imgs,idx,cap){
+  if(!Array.isArray(imgs)) imgs=[imgs];
+  _lbImgs=imgs; _lbIdx=idx||0;
+  document.getElementById('lb-img').src=imgs[_lbIdx]||'';
+  document.getElementById('lb-cap').textContent=cap||'';
+  var dots=document.getElementById('lb-dots');
+  dots.innerHTML=imgs.filter(Boolean).map(function(_,i){
+    return '<button onclick="lbSwitch('+i+')" style="width:8px;height:8px;border-radius:50%;background:'+(i===_lbIdx?'var(--warm)':'rgba(255,255,255,.25)')+';border:none;cursor:pointer"></button>';
+  }).join('');
+  var lb=document.getElementById('lightbox');
+  lb.style.display='flex';
+}
+function lbSwitch(i){
+  _lbIdx=i; document.getElementById('lb-img').src=_lbImgs[i]||'';
+  document.getElementById('lb-dots').querySelectorAll('button').forEach(function(b,j){
+    b.style.background=j===i?'var(--warm)':'rgba(255,255,255,.25)';
+  });
+}
+function lbClose(){ document.getElementById('lightbox').style.display='none'; }
+
+// ── SURPRISE ME ──────────────────────────────────────────────────────────
+var _visited=[];
+function surpriseMe(){
+  var pool=SITES.filter(function(s){var c=document.getElementById('c'+s.id);return c&&c.style.display!=='none';});
+  if(!pool.length) pool=SITES.slice();
+  var fresh=pool.filter(function(s){return _visited.indexOf(s.id)===-1;});
+  if(!fresh.length){_visited=[];fresh=pool;}
+  var pick=fresh[Math.floor(Math.random()*fresh.length)];
+  _visited.push(pick.id);
+  openSite(pick);
+}
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────
+document.addEventListener('keydown',function(e){
+  if(document.activeElement&&document.activeElement.tagName==='INPUT') return;
+  if(e.key==='Escape'){
+    var lb=document.getElementById('lightbox');
+    if(lb&&lb.style.display==='flex'){lbClose();return;}
+    var p=document.getElementById('panel');
+    if(p&&p.classList.contains('open')){closePanel();return;}
+  }
+  if(e.key==='r'||e.key==='R'){surpriseMe();return;}
+  if(e.key==='m'||e.key==='M'){resetMapView();return;}
+  if(e.key==='t'||e.key==='T'){toggleMapTheme();return;}
+  if(e.key==='f'||e.key==='F'){var fb=document.getElementById('btn-favorites');if(fb)fb.click();return;}
+  if(e.key==='s'||e.key==='S'){var sr=document.getElementById('search');if(sr){sr.focus();e.preventDefault();}return;}
+  if(e.key==='ArrowRight'&&activeId!==null){e.preventDefault();nextSite();}
+  if(e.key==='ArrowLeft'&&activeId!==null){e.preventDefault();prevSite();}
+});
+</script>
+</body>
+</html>
